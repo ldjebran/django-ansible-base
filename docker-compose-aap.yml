@@ -1,0 +1,52 @@
+---
+services:
+  postgres:
+    image: "postgres:15"
+    container_name: dab_postgres
+    environment:
+      POSTGRES_DB: dab_db
+      POSTGRES_USER: dab
+      POSTGRES_PASSWORD: dabing
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "dab", "-d", "dab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "55432:5432"
+    networks:
+      - test_app
+    volumes:
+      - "test_app_db:/var/lib/postgresql/data"
+
+  test_app:
+    build:
+      context: .
+    working_dir: /src
+    command: './test_app/scripts/aap_container_startup_uwsgi.sh'
+    volumes:
+      - '.:/src:z'
+    ports:
+      - ${TEST_APP_PORT:-3080}:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: dab
+      DB_PASSWORD: dabing
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-test_app.settings}
+    networks:
+      - service-mesh
+      - test_app
+
+volumes:
+  test_app_db:
+    name: test_app_aap_db
+
+networks:
+  test_app:
+    name: test_app
+  service-mesh:
+    name: service-mesh
