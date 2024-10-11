@@ -8,6 +8,7 @@ from django.urls.resolvers import URLPattern
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import AllowAny
 
 from ansible_base.lib.utils.response import get_fully_qualified_url
 from ansible_base.lib.utils.views.ansible_base import AnsibleBaseView
@@ -19,6 +20,8 @@ from test_app import models, serializers
 
 logger = logging.getLogger(__name__)
 
+import datetime
+from ansible_base.lib.constants import STATUS_GOOD
 
 class TestAppViewSet(ModelViewSet, AnsibleBaseView):
     prefetch_related = ()
@@ -206,6 +209,21 @@ class AnimalViewSet(TestAppViewSet):
 class CityViewSet(TestAppViewSet):
     serializer_class = serializers.CitySerializer
     queryset = models.City.objects.all()
+
+
+class PingView(AnsibleBaseView):
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
+    name = 'Ping'
+
+    def get(self, request, format=None):
+        current_time = datetime.datetime.now()
+        response = {
+            "pong": str(current_time),
+            "status": STATUS_GOOD,
+        }
+
+        return Response(response)
 
 
 ################################################
